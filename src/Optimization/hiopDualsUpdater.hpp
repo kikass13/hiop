@@ -143,8 +143,8 @@ public:
 private: //common code 
   virtual bool LSQUpdate(hiopIterate& it,
                          const hiopVector& grad_f,
-			 const hiopMatrix& jac_c,
-			 const hiopMatrix& jac_d);
+                         const hiopMatrix& jac_c,
+                         const hiopMatrix& jac_d);
 
   /**
    * @brief LSQ-based initialization for sparse linear algebra.
