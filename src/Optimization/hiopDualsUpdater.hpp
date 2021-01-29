@@ -61,7 +61,6 @@
 #include "hiopResidual.hpp"
 #include "hiopMatrix.hpp"
 #include "hiopLinSolver.hpp"
-#include "hiopLinSolverIndefDenseLapack.hpp"
 
 namespace hiop
 {
@@ -217,11 +216,13 @@ protected:
    */
   virtual hiopMatrixDense* get_lsq_sysmatrix() = 0;
 
-  /// Factorizes the matrix passed as argument
-  virtual int factorize_mat(hiopMatrixDense& M) = 0;
+  /// Factorizes the LSQ matrix and returns true if successfull, otherwise returns false
+  virtual bool factorize_mat() = 0;
 
-  // Performs triangular solves
-  virtual int solve_with_factors(hiopMatrixDense& M, hiopVector& r) = 0;
+  /* Performs triangular solves based on the factorize matrix and returns true if successfull, 
+   * otherwise returns false
+   */
+  virtual bool solve_with_factors(hiopVector& r) = 0;
 private:
   hiopMatrix *mexme_, *mexmi_, *mixmi_, *mxm_;
 #ifdef HIOP_DEEPCHECKS
@@ -237,12 +238,7 @@ private:
 class hiopDualsLsqUpdateLinsysRedDenseSym : public hiopDualsLsqUpdateLinsysRedDense
 {
 public:
-  hiopDualsLsqUpdateLinsysRedDenseSym(hiopNlpFormulation* nlp)
-    : hiopDualsLsqUpdateLinsysRedDense(nlp)
-  {
-    linsys_ = new hiopLinSolverIndefDenseLapack(nlp_->m(), nlp_);
-    //new hiopLinSolverIndefDenseMagmaBuKa(nlp_->m(), nlp_);
-  }
+  hiopDualsLsqUpdateLinsysRedDenseSym(hiopNlpFormulation* nlp);
   
   virtual ~hiopDualsLsqUpdateLinsysRedDenseSym()
   {
@@ -256,11 +252,8 @@ protected:
     return &linsys_->sysMatrix();
   }
   
-  /// Factorizes the matrix passed as argument
-  int factorize_mat(hiopMatrixDense& M);
-  
-  /// Performs triangular solves
-  int solve_with_factors(hiopMatrixDense& M, hiopVector& r);
+  bool factorize_mat();
+  bool solve_with_factors(hiopVector& r);
 protected:
   hiopLinSolverIndefDense* linsys_;
 };
@@ -274,7 +267,6 @@ public:
     : hiopDualsLsqUpdateLinsysRedDense(nlp)
   {
     M_ = LinearAlgebraFactory::createMatrixDense(nlp_->m(), nlp_->m());  
-    //new hiopLinSolverIndefDenseMagmaBuKa(nlp_->m(), nlp_);
   }
   
   virtual ~hiopDualsLsqUpdateLinsysRedDenseSymPD()
@@ -289,11 +281,8 @@ protected:
     return M_;
   }
   
-  /// Factorizes the matrix passed as argument
-  int factorize_mat(hiopMatrixDense& M);
-  
-  /// Performs triangular solves
-  int solve_with_factors(hiopMatrixDense& M, hiopVector& r);
+  bool factorize_mat();
+  bool solve_with_factors(hiopVector& r);
 protected:
   hiopMatrixDense *M_;
 };
