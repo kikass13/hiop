@@ -61,6 +61,7 @@
 #include "hiopResidual.hpp"
 #include "hiopMatrix.hpp"
 #include "hiopLinSolver.hpp"
+#include "hiopLinSolverIndefDenseLapack.hpp"
 
 namespace hiop
 {
@@ -208,17 +209,93 @@ private:
                              const hiopVector& grad_f,
                              const hiopMatrix& jac_c,
                              const hiopMatrix& jac_d);
-  //helpers
-  int factorizeMat(hiopMatrixDense& M);
-  int solveWithFactors(hiopMatrixDense& M, hiopVector& r);
+protected:
+  //not part of hiopDualsLsqUpdate but overridden in child classes
+
+  /* Returns reference to the underlying system matrix, which is maintained / allocated differently
+   * by child classes
+   */
+  virtual hiopMatrixDense* get_lsq_sysmatrix() = 0;
+
+  /// Factorizes the matrix passed as argument
+  virtual int factorize_mat(hiopMatrixDense& M) = 0;
+
+  // Performs triangular solves
+  virtual int solve_with_factors(hiopMatrixDense& M, hiopVector& r) = 0;
 private:
   hiopMatrix *mexme_, *mexmi_, *mixmi_, *mxm_;
-  hiopMatrix *M_;
 #ifdef HIOP_DEEPCHECKS
   hiopMatrix* M_copy_;
   hiopVector *rhs_copy_;
   hiopMatrix* mixme_;
 #endif
+};
+
+/** Provides functionality to solve the LSQ system as a symmetric system and is used to offload
+ * computations to the device via MAGMA linear solver when this is possible (or required by the user)
+ */
+class hiopDualsLsqUpdateLinsysRedDenseSym : public hiopDualsLsqUpdateLinsysRedDense
+{
+public:
+  hiopDualsLsqUpdateLinsysRedDenseSym(hiopNlpFormulation* nlp)
+    : hiopDualsLsqUpdateLinsysRedDense(nlp)
+  {
+    linsys_ = new hiopLinSolverIndefDenseLapack(nlp_->m(), nlp_);
+    //new hiopLinSolverIndefDenseMagmaBuKa(nlp_->m(), nlp_);
+  }
+  
+  virtual ~hiopDualsLsqUpdateLinsysRedDenseSym()
+  {
+    delete linsys_;
+  }
+
+protected:
+  /// Returns reference to the underlying system matrix, which is maintained by the linear solver
+  hiopMatrixDense* get_lsq_sysmatrix()
+  {
+    return &linsys_->sysMatrix();
+  }
+  
+  /// Factorizes the matrix passed as argument
+  int factorize_mat(hiopMatrixDense& M);
+  
+  /// Performs triangular solves
+  int solve_with_factors(hiopMatrixDense& M, hiopVector& r);
+protected:
+  hiopLinSolverIndefDense* linsys_;
+};
+
+/** Provides functionality to solve the LSQ system as a symmetric positive definite system on the host
+ */
+class hiopDualsLsqUpdateLinsysRedDenseSymPD : public hiopDualsLsqUpdateLinsysRedDense
+{
+public:
+  hiopDualsLsqUpdateLinsysRedDenseSymPD(hiopNlpFormulation* nlp)
+    : hiopDualsLsqUpdateLinsysRedDense(nlp)
+  {
+    M_ = LinearAlgebraFactory::createMatrixDense(nlp_->m(), nlp_->m());  
+    //new hiopLinSolverIndefDenseMagmaBuKa(nlp_->m(), nlp_);
+  }
+  
+  virtual ~hiopDualsLsqUpdateLinsysRedDenseSymPD()
+  {
+    delete M_;
+  }
+
+protected:
+  /// Returns reference to the underlying system matrix, which is maintained by the linear solver
+  hiopMatrixDense* get_lsq_sysmatrix()
+  {
+    return M_;
+  }
+  
+  /// Factorizes the matrix passed as argument
+  int factorize_mat(hiopMatrixDense& M);
+  
+  /// Performs triangular solves
+  int solve_with_factors(hiopMatrixDense& M, hiopVector& r);
+protected:
+  hiopMatrixDense *M_;
 };
 
 /**

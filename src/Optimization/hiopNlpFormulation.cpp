@@ -886,7 +886,7 @@ bool hiopNlpDenseConstraints::finalizeInitialization()
 
 hiopDualsLsqUpdate* hiopNlpDenseConstraints::alloc_duals_lsq_updater()
 {
-  return new hiopDualsLsqUpdateLinsysRedDense(this);
+  return new hiopDualsLsqUpdateLinsysRedDenseSymPD(this);
 }
 
 bool hiopNlpDenseConstraints::eval_Jac_c(hiopVector& x, bool new_x, double* Jac_c)
@@ -1031,7 +1031,7 @@ hiopMatrixDense* hiopNlpDenseConstraints::alloc_multivector_primal(int nrows, in
 */
 hiopDualsLsqUpdate* hiopNlpMDS::alloc_duals_lsq_updater()
 {
-  return new hiopDualsLsqUpdateLinsysRedDense(this);
+  return new hiopDualsLsqUpdateLinsysRedDenseSym(this);
 }
 
 bool hiopNlpMDS::eval_Jac_c(hiopVector& x, bool new_x, hiopMatrix& Jac_c)
