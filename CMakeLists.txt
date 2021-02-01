@@ -51,8 +51,8 @@ endif(HIOP_USE_MPI)
 
 # The binary dir is already a global include directory
 configure_file(
-  "${CMAKE_SOURCE_DIR}/src/Interface/hiop_defs.hpp.in"
-  "${CMAKE_BINARY_DIR}/hiop_defs.hpp")
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/Interface/hiop_defs.hpp.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/hiop_defs.hpp")
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
